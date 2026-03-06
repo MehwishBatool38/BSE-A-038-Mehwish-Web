@@ -313,7 +313,7 @@ http://localhost:3000
 ##screenshots
 <img width="1366" height="768" alt="{FBD1BA0B-86E6-47AA-BCA9-5F3D939C7234}" src="https://github.com/user-attachments/assets/b4178872-b0f3-4eb9-9638-c60c0034343e" />
 
-<img width="1366" height="768" alt="{B9F82C92-CDFC-4C02-AC1E-D4D784A09533}" src="https://github.com/user-attachments/assets/43ce2451-716b-4351-a745-337d77297f6c" />
+<img width="1366" height="768" alt="{BBE70D61-5D3F-482A-A038-AB5F0E88EE17}" src="https://github.com/user-attachments/assets/99be1f07-c645-41fe-9acb-a3b7fa6fa318" />
 
 <img width="1366" height="768" alt="{E05720B1-2DF8-4AB4-AE7C-98546DB1DA63}" src="https://github.com/user-attachments/assets/83311b98-2774-403e-9322-98be2cb033b9" />
 
