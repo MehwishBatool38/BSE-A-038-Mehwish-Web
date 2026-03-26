@@ -83,13 +83,9 @@
 No installation or build step required.
 
 ```bash
-# Option 1 — Open directly in a browser
+#  — Open directly in a browser
 open fee-management-system.html
 
-# Option 2 — Serve locally (optional)
-npx serve .
-# or
-python -m http.server 8000
 ```
 
 Then navigate to `http://localhost:8000/fee-management-system.html`.
@@ -150,47 +146,6 @@ All data is stored as JSON in `localStorage` under these keys:
 
 ---
 
-## 🗺️ Roadmap
-
-### Phase 1 — Core (✅ Done)
-- Auth system with role-based views
-- Fee plan creation and assignment
-- Payment recording and receipt printing
-- Student self-service portal
-
-### Phase 2 — In Progress 🚧
-- [ ] Search/filter on all list views
-- [ ] Dashboard charts and analytics
-- [ ] PDF receipt download
-- [ ] Overdue fee reminders UI
-
-### Phase 3 — Planned 📅
-- [ ] Email notification integration (EmailJS or backend API)
-- [ ] CSV/Excel data export
-- [ ] Bulk operations (batch fee assignment, bulk payment import)
-- [ ] Backend migration (Node.js + MongoDB or Supabase)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Since the project is in early development:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Make your changes in `fee-management-system.html`
-4. Commit with a clear message (`git commit -m "feat: add PDF export"`)
-5. Open a Pull Request with a description of what was added or fixed
-
-Please keep all code within the single-file structure until a build system is introduced.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — feel free to use, modify, and distribute it.
-
----
 
 ## 👤 Author
 
