@@ -13,7 +13,7 @@ Built with **Node.js** and **Express.js**.
 
 ---
 
-## Installation & Setup
+Installation & Setup
 
 ```bash
 # Step 1: Install dependencies
