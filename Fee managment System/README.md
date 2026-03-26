@@ -1,305 +1,81 @@
 EduFee — Fee Management System
-📋 Overview
-EduFee is a comprehensive fee management system designed for educational institutions to streamline the process of managing student fees, tracking payments, and generating receipts. The system provides separate interfaces for administrators and students, enabling efficient fee collection management with installment-based payment plans.
+EduFee is a modern, single-page web application to manage student fees, track payments, and automate fee processes for educational institutions. This application is built as a fully client-side, zero-backend HTML file. All data is stored locally in the browser using localStorage.
 
-🚀 Features
-👨‍💼 Administrator Features
-Module	Description
-Student Management	Add, edit, delete student accounts with registration numbers
-Fee Plans	Create customizable fee structures with installment schedules
-Fee Assignment	Assign fee plans to individual students
-Payment Recording	Process installment payments with receipt generation
-Fee Tracking	Monitor collection status with real-time progress indicators
-Reports	View all receipts and complete payment history
-Notifications	System-wide alerts and reminders
-👨‍🎓 Student Features
-Module	Description
-Dashboard	Overview of fee status and payment progress
-Profile Management	Update personal information and change password
-Fee Overview	View assigned fee plan and installment schedule
-Pending Dues	Track outstanding installments with due dates
-Payment History	View all past transactions
-Receipts	Download and print payment receipts
-🛠️ Technology Stack
-Component	Technology
-Frontend	HTML5, CSS3, JavaScript
-Storage	LocalStorage (Client-side)
-Fonts	Google Fonts (Playfair Display, Plus Jakarta Sans)
-Icons	Unicode Emojis
-📁 System Architecture
-text
-EduFee/
-├── index.html              # Single-page application
-├── localStorage            # Data persistence layer
-│   ├── ef_users           # User accounts
-│   ├── ef_plans           # Fee plans
-│   ├── ef_assignments     # Fee plan assignments
-│   ├── ef_payments        # Payment records
-│   ├── ef_notifications   # System notifications
-│   └── ef_counter         # ID counters
-🔐 Authentication
-Default Admin Credentials
-Field	Value
-Email	admin@edufee.com
-Password	admin123
-Student Registration
-Students can self-register through the sign-up form with:
+✨ Features
+Installment-Based Fee Plans: Flexible fee schedules with any number of installments.
+Student & Admin Roles: Separated dashboards, navigation, and permissions for students and administrators.
+Automated Email-Style Notifications: Students receive notifications for fee assignment, payments, and reminders.
+PDF/Printable Fee Receipts: Every payment generates a detailed printable receipt.
+Full Payment Tracking: Monitor collections, pending dues, full/partial payments, and overdue installments.
+Self-Registration: Students can create their own account.
+Role-Based Navigation: Admins manage plans, assignments, payments, and reports; students see only their own fees.
+Search, Modals, and Instant UI: Smooth user experience with fast filtering, modals, and responsive design.
+Fully Offline: No backend! All data is private, secure, and stored in the user’s browser.
+🚀 Getting Started
+Open the File
 
-Personal details (First/Last Name)
+Simply open fee-management-system.html in any modern web browser.
+Default Admin Login
 
-Contact information (Email, Phone)
+Email: admin@edufee.com
+Password: admin123
+Student Accounts
 
-Academic information (Course, Batch)
+Students can self-register from the Sign Up tab.
+Or, admin can add students from the Student Management section.
+🛠️ How It Works
+Admin Panel
 
-Password (minimum 6 characters)
+Dashboard: Key stats: students, fees collected, dues, plans.
+Student Management: Add, edit, delete student info.
+Fee Plans: Create structures with installments and due dates.
+Assignments: Assign fee plans to students.
+Record Payments: Register installment payments; partial payments are supported.
+Receipts, History & Tracking: Full searchable payment log and receipt download.
+Notifications: View and mark all notifications as read.
+Student Portal
 
-💰 Fee Management Workflow
-1. Create Fee Plan
-text
-Fee Plan Structure:
-├── Plan Name (e.g., "Annual Fee 2024")
-├── Total Amount (PKR)
-├── Number of Installments (1-12)
-└── Installment Details
-    ├── Amount per installment
-    └── Due date (auto-generated monthly)
-2. Assign Plan to Student
-Select student from list
+Dashboard: Overview of fees paid, due, installment status.
+My Fees: See assigned plans and progress bars.
+Pending Dues: See what needs to be paid (with overdue highlighting).
+Payment History: All transaction records.
+Receipts: Download or print receipts.
+My Profile: View and edit their info and password.
+📦 Data Storage
+All data (students, plans, assignments, payments, notifications) is saved in localStorage using the ef_* key prefix. No information is sent to a server; this runs entirely on your computer.
 
-Choose existing fee plan
+To reset all data: Clear your browser’s site storage.
 
-System creates assignment record
+💻 File Structure Overview
+This application is a single file. Everything (HTML, CSS, JavaScript) is contained in fee-management-system.html. It is not split into components or external scripts.
 
-3. Record Payment
-Select student and installment
+Key UI Sections:
 
-Enter payment amount
-
-Choose payment method (Cash/Bank Transfer/Online/Cheque)
-
-System generates receipt automatically
-
-4. Receipt Generation
-Unique receipt number (RCP-XXXXX)
-
-Complete payment details
-
-Fee summary with remaining balance
-
-Printable format
-
-📊 Data Models
-User Object
-javascript
-{
-  id: number,
-  role: "admin" | "student",
-  fname: string,
-  lname: string,
-  email: string,
-  password: string,
-  phone: string,
-  course: string,
-  batch: string,
-  regNo: string,      // e.g., "STU-0001"
-  address: string
-}
-Fee Plan Object
-javascript
-{
-  id: number,
-  name: string,
-  total: number,
-  installmentCount: number,
-  installments: [{
-    no: number,
-    amount: number,
-    dueDate: string      // YYYY-MM-DD
-  }],
-  createdAt: string
-}
-Assignment Object
-javascript
-{
-  id: number,
-  studentId: number,
-  planId: number,
-  assignedAt: string
-}
-Payment Object
-javascript
-{
-  id: number,
-  receiptNo: string,
-  studentId: number,
-  assignmentId: number,
-  planId: number,
-  installmentNo: number,
-  amount: number,
-  paymentDate: string,
-  method: string,
-  notes: string,
-  recordedAt: string
-}
-🎨 UI Components
-Color Palette
-Variable	Color Code	Usage
---navy	#0f2b4a	Sidebar, headers
---accent	#2563eb	Primary buttons, links
---accent2	#f59e0b	Brand accent
---green	#10b981	Success, paid status
---red	#ef4444	Errors, pending dues
---surface	#ffffff	Cards, forms
-Status Badges
-Status	Badge
-Fully Paid	✅ Badge-green
-Partial Payment	🟠 Badge-amber
-Pending	⚠️ Badge-red
-No Plan	⚪ Badge-gray
-🚦 Installation & Setup
-Prerequisites
-Modern web browser (Chrome, Firefox, Edge, Safari)
-
-LocalStorage enabled
-
-Steps
-Clone or Download
-
-bash
-git clone <repository-url>
-cd edufee
-Open Application
-
-Open fee-management-system.html in any modern browser
-
-No server setup required
-
-Initial Login
-
-Use admin credentials: admin@edufee.com / admin123
-
-Or register as a new student
-
-📱 Responsive Design
-Breakpoint	Layout
-> 768px	Full sidebar visible
-≤ 768px	Collapsible sidebar with overlay
-≤ 480px	Single-column card layout
-🔔 Notification System
-Triggers
-Welcome Message — Account creation
-
-Fee Plan Assignment — When admin assigns a plan
-
-Payment Confirmation — After successful payment
-
-Full Payment — When all installments are paid
-
-Features
-Unread notifications badge
-
-Mark all as read functionality
-
-Type-specific icons and colors
-
-📄 Receipt Format
-text
-╔══════════════════════════════════════════════╗
-║               EduFee                         ║
-║         Fee Management System                ║
-╠══════════════════════════════════════════════╣
-║ Receipt No: RCP-00001                        ║
-║ Student Name: John Doe                       ║
-║ Registration No: STU-0001                    ║
-║ Fee Plan: Annual Fee 2024                    ║
-║ Installment: 1 of 3                          ║
-║ Payment Date: 2024-01-15                     ║
-║ Amount Paid: PKR 16,667                      ║
-╠══════════════════════════════════════════════╣
-║ Total Fee: PKR 50,000                        ║
-║ Total Paid: PKR 16,667                       ║
-║ Remaining: PKR 33,333                        ║
-║                                              ║
-║              [PAID STAMP]                    ║
-╚══════════════════════════════════════════════╝
-🧪 Testing
-Admin Flow Testing
-Login as admin
-
-Create a fee plan with installments
-
-Add a student
-
-Assign fee plan to student
-
-Record a payment
-
-Verify receipt generation
-
-Check tracking dashboard updates
-
-Student Flow Testing
-Register as new student
-
-Login with credentials
-
-View dashboard (should show no plan)
-
-Admin assigns plan
-
-Student views fees and dues
-
-Make payment (admin records or student views)
-
-Download receipt
-
-📈 Database Structure (LocalStorage)
-Key	Purpose
-ef_users	Store all user accounts
-ef_plans	Store fee plans with installments
-ef_assignments	Link students to fee plans
-ef_payments	Store all payment transactions
-ef_notifications	Store system notifications
-ef_counter	Auto-increment ID counters
-🔧 Customization Guide
-Modify Fee Structure
-Edit generateInstallmentFields() function to change due date logic
-
-Update createFeePlan() to validate installment amounts
-
-Add Payment Methods
-javascript
-// In recordPayment() method, add new option:
-<option value="Credit Card">Credit Card</option>
-Change Currency
-Update fmt() function for currency symbol
-
-Replace "PKR" with desired currency code
-
-🐛 Known Limitations
-Issue	Workaround
-LocalStorage only	No multi-device sync
-No email integration	Manual notification sending
-No PDF generation	Browser print to PDF
-No data export	Manual backup via browser dev tools
-🔮 Future Enhancements
-Email notification integration
-
-PDF receipt generation
-
-Bulk student import (CSV/Excel)
-
-Payment gateway integration
-
-Advanced analytics and charts
-
-SMS reminders for due dates
-
-Multi-institution support
-
-Data export functionality
-
-Late fee calculation
-
-Scholarship/discount management
-
+Auth Page: Sign In/Sign Up
+Main Layout: Sidebar, Topbar, Content body
+Admin Views: Dashboard, Students, Fee Plans, Assignments, Payments, Notifications
+Student Views: Dashboard, My Fees, Dues, Receipts, Profile
+📖 Main HTML/JS Sections
+<!DOCTYPE html> ... </html>: The single application file.
+<style> ... </style>: Modern, custom CSS (responsive, dark sidebar, cards, modals, tables).
+Main markup divided into pages and views (using classes like .page and .view for show/hide).
+All interactive logic is pure JavaScript in a <script> block at the end. Key parts include:
+Data API (localStorage CRUD)
+Auth/Login/Register
+Role switching & navigation
+Modal system, toasts/alerts
+Renderers for each view
+Helpers for formatting, date, etc.
+✅ Requirements
+A modern browser (Chrome, Firefox, Edge, Safari).
+No frameworks or build tools are required.
+No internet is required after first load (except for Google Fonts).
+🔒 Security & Limitations
+All data is local to your browser. This is not a cloud service.
+There is no password reset function. You must remember the admin password, or clear all local storage to reset.
+Not for production — for demo, learning, or small, personal use only.
+📝 Customization / Development
+All logic is in a single HTML file; to customize, open in a text/code editor.
+You can edit styles, branding, add features, or enhance validation as needed.
+💬 Feedback & Issues
+This is an open, zero-backend demonstration project. For issues or improvement ideas, feel free to open the HTML file, review the code, and enhance it to your needs!
