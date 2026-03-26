@@ -3,7 +3,7 @@
 A simple REST API for managing hospital patients, doctors, and appointments.
 Built with **Node.js** and **Express.js**.
 
----
+
 
 ## Tech Stack
 
