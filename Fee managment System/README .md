@@ -83,12 +83,9 @@
 No installation or build step required.
 
 ```bash
-#  — Open directly in a browser
-open fee-management-system.html
+#  — Download folder, and run fee-management-system.html file
 
 ```
-
-Then navigate to `http://localhost:8000/fee-management-system.html`.
 
 ---
 
