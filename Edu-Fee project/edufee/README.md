@@ -338,31 +338,6 @@ edufee/
 
 ---
 
-## 🔒 Security
-
-- **Row Level Security** is enforced at the PostgreSQL level — bypass is not possible from the client
-- The Supabase `anon` key is intentionally designed to be safe in client-side code; all sensitive access is controlled by RLS
-- User passwords are hashed with bcrypt by Supabase Auth and are never stored in plain text
-- For production use, enable **Email Confirmations** in Supabase Auth settings to prevent unauthorized registrations
-- Never commit `js/config.js` with real credentials to a public repository — add it to `.gitignore`
-
----
-
-## 🌍 Deployment
-
-### Netlify — Recommended (Free)
-
-1. Create an account at [netlify.com](https://netlify.com)
-2. Drag and drop the `edufee/` folder onto the Netlify dashboard
-3. Your application is immediately live at a generated URL
-
-### Vercel
-
-```bash
-npm install -g vercel
-cd edufee
-vercel
-```
 
 ### GitHub Pages
 
@@ -389,13 +364,6 @@ vercel
 
 ---
 
-## 📄 License
-
-MIT License — free for personal and commercial use.
-
----
-
-<div align="center">
 
 Built with ❤️ using HTML, CSS, JavaScript & Supabase
 
