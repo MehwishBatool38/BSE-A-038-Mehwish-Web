@@ -39,6 +39,14 @@ const Auth = {
 
     onAuthStateChange(callback) {
         return _sb.auth.onAuthStateChange(callback);
+    },
+
+    async resetPassword(email) {
+        const { data, error } = await _sb.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.href
+        });
+        if (error) throw error;
+        return data;
     }
 };
 
@@ -55,9 +63,13 @@ const Profiles = {
             .eq('id', session.user.id)
             .maybeSingle();
 
+        // Check if this user is the Master Admin
+        const isMasterAdmin = session.user.email === (typeof MASTER_ADMIN_EMAIL !== 'undefined' ? MASTER_ADMIN_EMAIL : null);
+
         if (!data && !error) {
             console.log('Creating profile for user:', session.user.id);
             const meta = session.user.user_metadata || {};
+            const role = isMasterAdmin ? 'admin' : (meta.role || 'student');
 
             const { data: newProfile, error: createError } = await _sb
                 .from('profiles')
@@ -65,11 +77,11 @@ const Profiles = {
                     id: session.user.id,
                     fname: meta.fname || 'User',
                     lname: meta.lname || '',
-                    role: meta.role || 'student',
+                    role: role,
                     phone: meta.phone || '',
                     course: meta.course || '',
                     batch: meta.batch || '',
-                    reg_no: (meta.role === 'admin' ? 'ADMIN-001' : 'STU-' + Date.now()),
+                    reg_no: (role === 'admin' ? 'ADMIN-' + session.user.id.slice(0, 5).toUpperCase() : 'STU-' + Date.now().toString().slice(-6)),
                     address: ''
                 })
                 .select()
@@ -81,7 +93,7 @@ const Profiles = {
                     id: session.user.id,
                     fname: meta.fname || 'User',
                     lname: meta.lname || '',
-                    role: meta.role || 'student',
+                    role: role,
                     email: session.user.email,
                     phone: meta.phone || '',
                     course: meta.course || '',
@@ -91,6 +103,19 @@ const Profiles = {
                 };
             }
             return newProfile;
+        }
+
+        // Auto-promote Master Admin if they somehow lost their role
+        if (data && isMasterAdmin && data.role !== 'admin') {
+            console.log('Auto-promoting Master Admin:', session.user.email);
+            const { data: updatedProfile, error: updateError } = await _sb
+                .from('profiles')
+                .update({ role: 'admin' })
+                .eq('id', session.user.id)
+                .select()
+                .single();
+
+            if (!updateError) return updatedProfile;
         }
 
         if (error) console.error('Error fetching profile:', error);
@@ -105,6 +130,7 @@ const Profiles = {
             .order('created_at', { ascending: false });
         if (error) {
             console.error('Error fetching profiles:', error);
+            // Return empty instead of throwing to avoid breaking the dashboard if empty
             return [];
         }
         return data || [];
@@ -166,26 +192,62 @@ const Profiles = {
 
 const FeePlans = {
     async getAll() {
-        const { data, error } = await _sb
-            .from('fee_plans')
-            .select(`*, installments(*)`)
-            .order('created_at', { ascending: false });
-        if (error) throw error;
-        if (data) data.forEach(p => {
-            if (p.installments) p.installments.sort((a, b) => a.no - b.no);
-        });
-        return data;
+        try {
+            const { data: plans, error: plansError } = await _sb
+                .from('fee_plans')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (plansError) throw plansError;
+            if (!plans || plans.length === 0) return [];
+
+            const planIds = plans.map(p => p.id);
+            const { data: installments, error: instError } = await _sb
+                .from('installments')
+                .select('*')
+                .in('plan_id', planIds)
+                .order('plan_id', { ascending: true });
+
+            if (instError) throw instError;
+
+            // Merge installments with plans
+            return plans.map(p => ({
+                ...p,
+                installments: (installments || []).filter(i => i.plan_id === p.id).sort((a, b) => a.no - b.no)
+            }));
+        } catch (e) {
+            console.error('Error fetching fee plans:', e);
+            return [];
+        }
     },
 
     async getById(id) {
-        const { data, error } = await _sb
-            .from('fee_plans')
-            .select(`*, installments(*)`)
-            .eq('id', id)
-            .single();
-        if (error) throw error;
-        if (data && data.installments) data.installments.sort((a, b) => a.no - b.no);
-        return data;
+        try {
+            const { data: plan, error: planError } = await _sb
+                .from('fee_plans')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (planError) throw planError;
+            if (!plan) return null;
+
+            const { data: installments, error: instError } = await _sb
+                .from('installments')
+                .select('*')
+                .eq('plan_id', id)
+                .order('no', { ascending: true });
+
+            if (instError) throw instError;
+
+            return {
+                ...plan,
+                installments: installments || []
+            };
+        } catch (e) {
+            console.error('Error fetching fee plan:', e);
+            return null;
+        }
     },
 
     async create({ name, total, installmentCount, installments }) {
@@ -220,43 +282,85 @@ const FeePlans = {
 
 const FeeAssignments = {
     async getAll() {
-        const { data, error } = await _sb
-            .from('fee_assignments')
-            .select(`
-        *,
-        profiles!fee_assignments_student_id_fkey(id, fname, lname, reg_no, course, batch, email),
-        fee_plans(id, name, total, installment_count, installments(*))
-      `)
-            .order('assigned_at', { ascending: false });
-        if (error) throw error;
-        if (data) {
-            data.forEach(a => {
-                if (a.fee_plans && a.fee_plans.installments) {
-                    a.fee_plans.installments.sort((x, y) => x.no - y.no);
+        try {
+            // Fetch assignments first
+            const { data: assignments, error: asgnError } = await _sb
+                .from('fee_assignments')
+                .select('*')
+                .order('assigned_at', { ascending: false });
+
+            if (asgnError) throw asgnError;
+            if (!assignments || assignments.length === 0) return [];
+
+            // Get unique IDs
+            const studentIds = [...new Set(assignments.map(a => a.student_id))];
+            const planIds = [...new Set(assignments.map(a => a.plan_id))];
+
+            // Fetch related data in parallel
+            const [{ data: profilesData }, { data: plansData }, { data: installmentsData }] = await Promise.all([
+                _sb.from('profiles').select('*').in('id', studentIds),
+                _sb.from('fee_plans').select('*').in('id', planIds),
+                _sb.from('installments').select('*').in('plan_id', planIds)
+            ]);
+
+            // Manually merge data
+            const result = assignments.map(a => ({
+                ...a,
+                profiles: (profilesData || []).find(p => p.id === a.student_id) || null,
+                fee_plans: {
+                    ...(plansData || []).find(p => p.id === a.plan_id),
+                    installments: (installmentsData || []).filter(i => i.plan_id === a.plan_id).sort((x, y) => x.no - y.no)
                 }
-            });
+            }));
+
+            return result;
+        } catch (e) {
+            console.error('Error fetching assignments:', e);
+            return [];
         }
-        return data;
     },
 
     async getForStudent(studentId) {
-        const { data, error } = await _sb
-            .from('fee_assignments')
-            .select(`
-        *,
-        fee_plans(id, name, total, installment_count, installments(*))
-      `)
-            .eq('student_id', studentId)
-            .maybeSingle();
-        if (error) throw error;
-        if (data && data.fee_plans && data.fee_plans.installments) {
-            data.fee_plans.installments.sort((a, b) => a.no - b.no);
+        try {
+            const { data: assignment, error: asgnError } = await _sb
+                .from('fee_assignments')
+                .select('*')
+                .eq('student_id', studentId)
+                .maybeSingle();
+
+            if (asgnError) throw asgnError;
+            if (!assignment) return null;
+
+            // Fetch the fee plan and its installments
+            const [{ data: planData }, { data: installmentsData }] = await Promise.all([
+                _sb.from('fee_plans').select('*').eq('id', assignment.plan_id).single(),
+                _sb.from('installments').select('*').eq('plan_id', assignment.plan_id)
+            ]);
+
+            return {
+                ...assignment,
+                fee_plans: {
+                    ...planData,
+                    installments: (installmentsData || []).sort((a, b) => a.no - b.no)
+                }
+            };
+        } catch (e) {
+            console.error('Error fetching assignment for student:', e);
+            return null;
         }
-        return data;
     },
 
     async create(studentId, planId) {
         const session = await Auth.getSession();
+
+        // First, check if there's an existing assignment to delete (to allow re-assignment)
+        const { error: delErr } = await _sb
+            .from('fee_assignments')
+            .delete()
+            .eq('student_id', studentId);
+
+        if (delErr) console.warn('Clearing old assignment failed:', delErr.message);
+
         const { data, error } = await _sb
             .from('fee_assignments')
             .insert({ student_id: studentId, plan_id: planId, assigned_by: session.user.id })
@@ -276,16 +380,34 @@ const FeeAssignments = {
 
 const Payments = {
     async getAll() {
-        const { data, error } = await _sb
-            .from('payments')
-            .select(`
-        *,
-        profiles!payments_student_id_fkey(id, fname, lname, reg_no, course),
-        fee_plans(name)
-      `)
-            .order('created_at', { ascending: false });
-        if (error) throw error;
-        return data;
+        try {
+            const { data: payments, error: payError } = await _sb
+                .from('payments')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (payError) throw payError;
+            if (!payments || payments.length === 0) return [];
+
+            // Get unique profile and plan IDs
+            const profileIds = [...new Set(payments.map(p => p.student_id))];
+            const planIds = [...new Set(payments.map(p => p.plan_id))];
+
+            const [{ data: profilesData }, { data: plansData }] = await Promise.all([
+                _sb.from('profiles').select('id, fname, lname, reg_no, course').in('id', profileIds),
+                _sb.from('fee_plans').select('id, name').in('id', planIds)
+            ]);
+
+            // Merge data
+            return payments.map(p => ({
+                ...p,
+                profiles: (profilesData || []).find(pr => pr.id === p.student_id) || null,
+                fee_plans: (plansData || []).find(pl => pl.id === p.plan_id) || null
+            }));
+        } catch (e) {
+            console.error('Error fetching payments:', e);
+            return [];
+        }
     },
 
     async getForStudent(studentId) {
@@ -296,6 +418,42 @@ const Payments = {
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data;
+    },
+
+    async create({ studentId, assignmentId, planId, installmentNo, amount, paymentDate, method, notes }) {
+        const session = await Auth.getSession();
+        const receipt_no = 'RCP-' + String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+
+        const { data, error } = await _sb
+            .from('payments')
+            .insert({
+                student_id: studentId,
+                assignment_id: assignmentId,
+                plan_id: planId,
+                installment_no: installmentNo,
+                amount: parseFloat(amount),
+                payment_date: paymentDate || new Date().toISOString().split('T')[0],
+                method: method || 'Cash',
+                notes: notes || '',
+                receipt_no,
+                recorded_by: session ? session.user.id : null
+            })
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    sumForAssignment(payments, assignmentId) {
+        return (payments || [])
+            .filter(p => p.assignment_id === assignmentId)
+            .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+    },
+
+    sumForInstallment(payments, assignmentId, installmentNo) {
+        return (payments || [])
+            .filter(p => p.assignment_id === assignmentId && p.installment_no === installmentNo)
+            .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
     },
 
     async getForAssignment(assignmentId) {
@@ -320,50 +478,40 @@ const Payments = {
             .single();
         if (error) throw error;
         return data;
-    },
-
-    async create({ studentId, assignmentId, planId, installmentNo, amount, paymentDate, method, notes }) {
-        const session = await Auth.getSession();
-        // Generate receipt number client-side (server-side via DB function is preferred)
-        const receiptNo = 'RCP-' + String(Date.now()).slice(-5);
-        const { data, error } = await _sb
-            .from('payments')
-            .insert({
-                receipt_no: receiptNo,
-                student_id: studentId,
-                assignment_id: assignmentId,
-                plan_id: planId,
-                installment_no: installmentNo,
-                amount,
-                payment_date: paymentDate,
-                method,
-                notes,
-                recorded_by: session.user.id
-            })
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
-    },
-
-    // Computed: total paid for an assignment
-    sumForAssignment(payments, assignmentId) {
-        return payments
-            .filter(p => p.assignment_id === assignmentId)
-            .reduce((s, p) => s + parseFloat(p.amount), 0);
-    },
-
-    // Computed: total paid for an installment within an assignment
-    sumForInstallment(payments, assignmentId, installmentNo) {
-        return payments
-            .filter(p => p.assignment_id === assignmentId && p.installment_no === installmentNo)
-            .reduce((s, p) => s + parseFloat(p.amount), 0);
     }
 };
 
 // ── NOTIFICATIONS ─────────────────────────────────────────
 
 const Notifications = {
+    async getForStudent(studentId) {
+        const { data, error } = await _sb
+            .from('notifications')
+            .select('*')
+            .eq('student_id', studentId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data;
+    },
+
+    async markAsRead(id) {
+        const { error } = await _sb
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    async create({ studentId, type, message }) {
+        const { data, error } = await _sb
+            .from('notifications')
+            .insert({ student_id: studentId, type, message })
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
     async getForUser(userId, role) {
         let query = _sb
             .from('notifications')
@@ -383,11 +531,7 @@ const Notifications = {
     },
 
     async markRead(id) {
-        const { error } = await _sb
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', id);
-        if (error) throw error;
+        return this.markAsRead(id);
     },
 
     async markAllRead(userId, role) {

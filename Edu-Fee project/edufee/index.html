@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EduFee — Fee Management System</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <!-- Supabase JS SDK (not needed in demo mode) -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
-    <!-- App Config & API - Using Demo Mode (localStorage only) -->
-    <!-- <script src="js/config.js"></script> -->
-    <script src="js/api-demo.js"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- App Config & API -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
     <style>
         *,
         *::before,
@@ -1571,21 +1571,24 @@
                     <div class="form-group">
                         <label>Password</label>
                         <input type="password" id="login-pass" placeholder="••••••••" />
+                        <div style="text-align: right; margin-top: 5px;">
+                            <a href="#" onclick="showResetPassword()" style="font-size: 13px; color: var(--accent); text-decoration: none;">Forgot Password?</a>
+                        </div>
                     </div>
                     <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()" style="margin-top:.5rem;">Sign In →</button>
-                    <div class="demo-creds">
+                    <!-- <div class="demo-creds">
                         <strong>Demo Credentials</strong> Admin: admin@edufee.com / Admin@123<br> Student: Register a new account
-                    </div>
+                    </div> -->
                 </div>
                 <!-- REGISTER -->
                 <div class="auth-form" id="register-form">
                     <div class="auth-title">Create Account</div>
                     <div class="auth-desc">Student self-registration</div>
                     <div class="form-row">
-                        <div class="form-group"><label>First Name</label><input type="text" id="reg-fname" placeholder="mishi" /></div>
+                        <div class="form-group"><label>First Name</label><input type="text" id="reg-fname" placeholder="Ali" /></div>
                         <div class="form-group"><label>Last Name</label><input type="text" id="reg-lname" placeholder="Khan" /></div>
                     </div>
-                    <div class="form-group"><label>Email Address</label><input type="email" id="reg-email" placeholder="mishi@example.com" /></div>
+                    <div class="form-group"><label>Email Address</label><input type="email" id="reg-email" placeholder="ali@example.com" /></div>
                     <div class="form-group"><label>Phone Number</label><input type="text" id="reg-phone" placeholder="+92 300 0000000" /></div>
                     <div class="form-row">
                         <div class="form-group"><label>Course</label><input type="text" id="reg-course" placeholder="BS Computer Science" /></div>
@@ -1593,6 +1596,19 @@
                     </div>
                     <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Minimum 6 characters" /></div>
                     <button class="btn btn-primary btn-full" id="register-btn" onclick="doRegister()">Create Account →</button>
+                </div>
+                <!-- PASSWORD RESET -->
+                <div class="auth-form" id="reset-form">
+                    <div class="auth-title">Reset Password</div>
+                    <div class="auth-desc">Enter your email to receive a reset link</div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="reset-email" placeholder="you@example.com" />
+                    </div>
+                    <button class="btn btn-primary btn-full" id="reset-btn" onclick="doResetPassword()" style="margin-top:.5rem;">Send Reset Link →</button>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="#" onclick="switchAuthTab('login')" style="font-size: 13px; color: var(--text3); text-decoration: none;">← Back to Login</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1637,6 +1653,7 @@
                 <div class="nav-section-label">Fees & Payments</div>
                 <button class="nav-item" onclick="showView('my-fees')"><span class="nav-item-icon">💰</span> My Fees</button>
                 <button class="nav-item" onclick="showView('my-dues')"><span class="nav-item-icon">⚠️</span> Pending Dues</button>
+                <button class="nav-item" onclick="showView('student-pay-fee')"><span class="nav-item-icon">💳</span> Pay Fee</button>
                 <button class="nav-item" onclick="showView('my-payments')"><span class="nav-item-icon">📜</span> Payment History</button>
                 <button class="nav-item" onclick="showView('my-receipts')"><span class="nav-item-icon">🧾</span> My Receipts</button>
                 <div class="nav-section-label">Alerts</div>
@@ -2037,6 +2054,47 @@
                     </div>
                 </div>
 
+                <!-- ════ STUDENT PAY FEE ════ -->
+                <div class="view" id="view-student-pay-fee">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-header-title">Pay Fee Online</div>
+                            <div class="page-header-sub">Securely pay your installments from your portal</div>
+                        </div>
+                    </div>
+                    <div class="form-card" style="max-width:600px;">
+                        <div id="student-pay-no-asgn" style="display:none;" class="demo-creds">⚠️ No fee plan assigned. You cannot make payments at this time.</div>
+                        <div id="student-pay-form" style="display:none;">
+                            <div class="form-group"><label>Select Installment</label>
+                                <select id="sp-installment-select" onchange="loadStudentPayAmount()"><option value="">-- Choose Installment --</option></select>
+                            </div>
+                            <div id="sp-installment-details" style="display:none;margin-bottom:1rem;">
+                                <div style="padding:1rem;background:var(--accent-light);border-radius:var(--r-sm);border:1px solid #bfdbfe;font-size:.87rem;">
+                                    <div class="flex justify-between" style="gap:1rem;flex-wrap:wrap;">
+                                        <div><span class="text-muted">Amount:</span> <strong id="sp-amount-display">—</strong></div>
+                                        <div><span class="text-muted">Due Date:</span> <strong id="sp-due-display">—</strong></div>
+                                        <div><span class="text-muted">Status:</span> <span id="sp-status-display">—</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label>Amount (PKR) *</label><input type="number" id="sp-amount" placeholder="0" /></div>
+                                <div class="form-group"><label>Payment Method</label>
+                                    <select id="sp-method">
+                <option value="Online">Online Payment</option>
+                <option value="JazzCash">JazzCash</option>
+                <option value="EasyPaisa">EasyPaisa</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Payment Date</label><input type="date" id="sp-date" readonly /></div>
+                            <div class="form-group"><label>Notes (Optional)</label><textarea id="sp-notes" placeholder="e.g., Paid via JazzCash App"></textarea></div>
+                            <button class="btn btn-primary btn-full" id="sp-btn" onclick="studentProcessPayment()">💳 Pay Now</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <!-- end content-body -->
         </div>
@@ -2232,13 +2290,18 @@
         async function loadAppData() {
             try {
                 if (APP.profile.role === 'admin') {
-                    [APP.students, APP.plans, APP.assignments, APP.payments, APP.notifications] = await Promise.all([
+                    const [students, plans, assignments, payments, notifications] = await Promise.all([
                         Profiles.getAll(),
                         FeePlans.getAll(),
                         FeeAssignments.getAll(),
                         Payments.getAll(),
                         Notifications.getForUser(APP.profile.id, 'admin'),
                     ]);
+                    APP.students = students || [];
+                    APP.plans = plans || [];
+                    APP.assignments = assignments || [];
+                    APP.payments = payments || [];
+                    APP.notifications = notifications || [];
                 } else {
                     const asgn = await FeeAssignments.getForStudent(APP.profile.id);
                     const [payments, notifs] = await Promise.all([
@@ -2246,10 +2309,11 @@
                         Notifications.getForUser(APP.profile.id, 'student'),
                     ]);
                     APP.assignments = asgn ? [asgn] : [];
-                    APP.payments = payments;
-                    APP.notifications = notifs;
+                    APP.payments = payments || [];
+                    APP.notifications = notifs || [];
                 }
             } catch (e) {
+                console.error('Data loading error:', e);
                 toast('Error loading data: ' + e.message, 'error');
             }
         }
@@ -2264,8 +2328,36 @@
         function switchAuthTab(tab) {
             document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            event.target.classList.add('active');
+            if (tab === 'login' || tab === 'register') {
+                const tabs = document.querySelectorAll('.auth-tab');
+                if (tab === 'login') tabs[0].classList.add('active');
+                else tabs[1].classList.add('active');
+            }
             qs('#' + tab + '-form').classList.add('active');
+        }
+
+        function showResetPassword() {
+            document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            qs('#reset-form').classList.add('active');
+        }
+
+        async function doResetPassword() {
+            const email = v('reset-email').trim().toLowerCase();
+            if (!email) {
+                toast('Please enter your email', 'error');
+                return;
+            }
+            setLoading('reset-btn', true, 'Sending email...');
+            try {
+                await Auth.resetPassword(email);
+                toast('Reset link sent! Check your inbox.', 'success');
+                switchAuthTab('login');
+            } catch (e) {
+                toast(e.message || 'Failed to send reset link', 'error');
+            } finally {
+                setLoading('reset-btn', false, 'Send Reset Link →');
+            }
         }
 
         async function doLogin() {
@@ -2385,6 +2477,7 @@
             'my-dues': 'Pending Dues',
             'my-payments': 'Payment History',
             'my-receipts': 'My Receipts',
+            'student-pay-fee': 'Pay Fee',
         };
 
         function showView(id) {
@@ -2416,6 +2509,7 @@
                 'my-dues': renderMyDues,
                 'my-payments': renderMyPayments,
                 'my-receipts': renderMyReceipts,
+                'student-pay-fee': renderStudentPayFee,
             };
             if (fns[id]) fns[id]();
         }
@@ -3251,6 +3345,7 @@ function renderMyFees() {
       <td class="text-green">PKR ${fmt(ip)}</td>
       <td class="${ip<parseFloat(i.amount)?'text-red':'text-green'}">PKR ${fmt(Math.max(0,parseFloat(i.amount)-ip))}</td>
       <td>${st}</td>
+      <td>${ip < parseFloat(i.amount) ? `<button class="btn btn-primary btn-sm" onclick="showView('student-pay-fee');setTimeout(() => { sv('sp-installment-select', ${i.no}); loadStudentPayAmount(); }, 100)">Pay</button>` : '—'}</td>
     </tr>`;
   });
   qs('#my-fees-content').innerHTML = `
@@ -3272,7 +3367,7 @@ function renderMyFees() {
     <div class="card">
       <div class="card-header"><div class="card-title">💳 Installment Schedule</div></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Installment</th><th>Amount</th><th>Due Date</th><th>Paid</th><th>Remaining</th><th>Status</th></tr></thead>
+        <thead><tr><th>Installment</th><th>Amount</th><th>Due Date</th><th>Paid</th><th>Remaining</th><th>Status</th><th>Action</th></tr></thead>
         <tbody>${instRows}</tbody>
       </table></div>
     </div>`;
@@ -3303,6 +3398,7 @@ function renderMyDues() {
           <div style="text-align:right;">
             <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--red);">PKR ${fmt(rem)}</div>
             <div class="text-sm text-muted">remaining</div>
+            <button class="btn btn-primary btn-sm mt-2" onclick="showView('student-pay-fee');setTimeout(() => { sv('sp-installment-select', ${i.no}); loadStudentPayAmount(); }, 100)">Pay Now</button>
           </div>
         </div>
       </div>`;
@@ -3341,6 +3437,89 @@ function renderMyReceipts() {
     </tr>`;
   });
   qs('#my-receipts-body').innerHTML = rows || `<tr><td colspan="5" class="text-center text-muted" style="padding:2rem;">No receipts yet</td></tr>`;
+}
+
+function renderStudentPayFee() {
+  const asgn = APP.assignments[0];
+  if (!asgn || !asgn.fee_plans) {
+    qs('#student-pay-no-asgn').style.display = 'block';
+    qs('#student-pay-form').style.display = 'none';
+    return;
+  }
+  qs('#student-pay-no-asgn').style.display = 'none';
+  qs('#student-pay-form').style.display = 'block';
+  sv('sp-date', new Date().toISOString().split('T')[0]);
+  
+  const plan = asgn.fee_plans;
+  let opts = '<option value="">-- Choose Installment --</option>';
+  (plan.installments || []).forEach(i => {
+    const ip = Payments.sumForInstallment(APP.payments, asgn.id, i.no);
+    const status = ip >= parseFloat(i.amount) ? '✓ Paid' : ip > 0 ? 'Partial' : 'Unpaid';
+    opts += `<option value="${i.no}">Installment ${i.no} — PKR ${fmt(i.amount)} (${status})</option>`;
+  });
+  qs('#sp-installment-select').innerHTML = opts;
+  qs('#sp-installment-details').style.display = 'none';
+}
+
+function loadStudentPayAmount() {
+  const no = parseInt(v('sp-installment-select'));
+  if (!no) { qs('#sp-installment-details').style.display = 'none'; return; }
+  const asgn = APP.assignments[0];
+  const plan = asgn.fee_plans;
+  const inst = (plan.installments||[]).find(i => i.no === no);
+  const paid = Payments.sumForInstallment(APP.payments, asgn.id, no);
+  const rem = Math.max(0, parseFloat(inst.amount) - paid);
+  
+  qs('#sp-amount-display').textContent = `PKR ${fmt(inst.amount)} (Remaining: PKR ${fmt(rem)})`;
+  qs('#sp-due-display').textContent = inst.due_date;
+  qs('#sp-status-display').innerHTML = paid >= parseFloat(inst.amount)
+    ? '<span class="badge badge-green">Paid</span>'
+    : paid > 0 ? '<span class="badge badge-amber">Partial</span>' : '<span class="badge badge-red">Unpaid</span>';
+  sv('sp-amount', rem);
+  qs('#sp-installment-details').style.display = 'block';
+}
+
+async function studentProcessPayment() {
+  const no = parseInt(v('sp-installment-select'));
+  const amount = parseFloat(v('sp-amount'));
+  const date = v('sp-date');
+  const method = v('sp-method');
+  const notes = v('sp-notes');
+  if (!no || !amount || !date) { toast('Please select installment and amount', 'error'); return; }
+  if (amount <= 0) { toast('Amount must be positive', 'error'); return; }
+  
+  const asgn = APP.assignments[0];
+  const plan = asgn.fee_plans;
+  const inst = (plan.installments||[]).find(i => i.no === no);
+  const existingPaid = Payments.sumForInstallment(APP.payments, asgn.id, no);
+  if (existingPaid + amount > parseFloat(inst.amount)) {
+    toast(`Exceeds installment amount. Max remaining: PKR ${fmt(parseFloat(inst.amount)-existingPaid)}`, 'error'); return;
+  }
+  
+  setLoading('sp-btn', true, 'Processing...');
+  try {
+    const payment = await Payments.create({
+      studentId: APP.profile.id,
+      assignmentId: asgn.id,
+      planId: asgn.plan_id,
+      installmentNo: no,
+      amount,
+      paymentDate: date,
+      method,
+      notes: notes + ' (Self-paid from student portal)'
+    });
+    
+    await Notifications.add(APP.profile.id, 'payment_confirmed', `Real-time Confirmation: Your payment of PKR ${fmt(amount)} for Installment ${no} (${plan.name}) was successful. Receipt: ${payment.receipt_no}`);
+    
+    toast(`Payment successful! Receipt: ${payment.receipt_no}`, 'success');
+    await refreshData();
+    showReceiptById(payment.id);
+    showView('my-payments');
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    setLoading('sp-btn', false, '💳 Pay Now');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
