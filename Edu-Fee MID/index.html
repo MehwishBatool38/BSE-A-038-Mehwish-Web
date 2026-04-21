@@ -2213,6 +2213,10 @@
                 <div class="form-group"><label>First Name</label><input type="text" id="ep-fname" /></div>
                 <div class="form-group"><label>Last Name</label><input type="text" id="ep-lname" /></div>
             </div>
+            <div class="form-row">
+                <div class="form-group"><label>Course</label><input type="text" id="ep-course" /></div>
+                <div class="form-group"><label>Batch</label><input type="text" id="ep-batch" /></div>
+            </div>
             <div class="form-group"><label>Phone</label><input type="text" id="ep-phone" /></div>
             <div class="form-group"><label>Address</label><textarea id="ep-address" rows="2"></textarea></div>
             <div class="section-divider"><span>Change Password (optional)</span></div>
@@ -3280,7 +3284,6 @@ function renderMyProfile() {
       <div class="card-body">
         <div class="grid-2">
           <div><div class="text-sm text-muted">Full Name</div><div class="fw-bold">${cu.fname} ${cu.lname}</div></div>
-          <div><div class="text-sm text-muted">Email</div><div class="fw-bold">${cu.email||'—'}</div></div>
           <div><div class="text-sm text-muted">Phone</div><div class="fw-bold">${cu.phone||'Not set'}</div></div>
           <div><div class="text-sm text-muted">Registration No.</div><div class="fw-bold">${cu.reg_no}</div></div>
           <div><div class="text-sm text-muted">Course</div><div class="fw-bold">${cu.course||'Not set'}</div></div>
@@ -3290,6 +3293,7 @@ function renderMyProfile() {
       </div>
     </div>`;
   sv('ep-fname', cu.fname); sv('ep-lname', cu.lname);
+  sv('ep-course', cu.course||''); sv('ep-batch', cu.batch||'');
   sv('ep-phone', cu.phone||''); sv('ep-address', cu.address||'');
 }
 
@@ -3299,6 +3303,8 @@ async function saveProfile() {
     const updates = {
       fname: v('ep-fname').trim() || APP.profile.fname,
       lname: v('ep-lname').trim() || APP.profile.lname,
+      course: v('ep-course').trim(),
+      batch: v('ep-batch').trim(),
       phone: v('ep-phone').trim(),
       address: v('ep-address').trim(),
     };
